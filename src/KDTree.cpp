@@ -5,7 +5,6 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
-#include <atomic>
 
 
 void KDTree::load_from_csv(const std::string &filename) {
@@ -33,19 +32,15 @@ void KDTree::build(const std::vector<std::vector<double>> &points) {
         return;
     }
 
-    auto copy = points;
-    std::vector<std::shared_ptr<Node>> nodes;
-    nodes.reserve(points.size());
-    root = nullptr;
-
-//    #pragma omp parallel for default(none) shared(nodes, points)
-//    for (const auto & point : points) {
-//        nodes.push_back(std::make_shared<Node>(point));
-//    }
+    std::vector<std::shared_ptr<Node>> nodes(points.size());
+    #pragma omp parallel for
+    for (size_t i = 0; i < points.size(); ++i) {
+        nodes[i] = std::make_shared<Node>(points[i]);
+    }
 
     #pragma omp parallel
     #pragma omp single
-    root = insert(root, copy.begin(), copy.end(), 0);
+    root = balanced_insert(nodes.begin(), nodes.end(), 0);
 }
 
 std::shared_ptr<Node> KDTree::nearest(const std::vector<double> &point) {
@@ -97,6 +92,7 @@ KDTree::insert(std::shared_ptr<Node> &node, point_iterator begin, point_iterator
     if (begin == end) {
         return nullptr;
     }
+    std::cout << omp_get_thread_num() << std::endl;
 
     unsigned axis = depth % begin->size();
 
@@ -107,7 +103,7 @@ KDTree::insert(std::shared_ptr<Node> &node, point_iterator begin, point_iterator
 
     node = std::make_shared<Node>(*median);
 
-    if (depth < 40) {
+    if (depth < 2) {
         #pragma omp task firstprivate(median, begin, depth) shared(node) default(none)
         {
             node->left = insert(node->left, begin, median, depth + 1);
@@ -120,6 +116,44 @@ KDTree::insert(std::shared_ptr<Node> &node, point_iterator begin, point_iterator
     } else {
         node->left = insert(node->left, begin, median, depth + 1);
         node->right = insert(node->right, median + 1, end, depth + 1);
+    }
+
+    return node;
+}
+
+std::shared_ptr<Node> KDTree::balanced_insert(std::vector<std::shared_ptr<Node>>::iterator begin,
+                                              std::vector<std::shared_ptr<Node>>::iterator end,
+                                              int depth) {
+    if (begin == end) {
+        return nullptr;
+    }
+
+    //std::cout << omp_get_thread_num() << std::endl;
+
+    size_t length = std::distance(begin, end);
+    size_t axis = depth % begin->get()->point.size();
+
+    auto median = begin + length / 2;
+
+    auto comparator = [axis](const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b) {
+        return a->point[axis] < b->point[axis];
+    };
+
+    std::nth_element(begin, median, end, comparator);
+
+    std::shared_ptr<Node> node = *median;
+
+    if (depth < 7) {
+        #pragma omp task shared(node) firstprivate(begin, median, depth) default(none)
+        node->left = balanced_insert(begin, median, depth + 1);
+
+        #pragma omp task shared(node) firstprivate(median, end, depth) default(none)
+        node->right = balanced_insert(median + 1, end, depth + 1);
+
+        #pragma omp taskwait
+    } else {
+        node->left = balanced_insert(begin, median, depth + 1);
+        node->right = balanced_insert(median + 1, end, depth + 1);
     }
 
     return node;

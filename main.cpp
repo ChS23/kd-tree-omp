@@ -16,7 +16,6 @@ std::vector<double> generate_point(int N, unsigned seed = 42) {
     return point;
 }
 
-
 void test_build(const std::string& filename, const std::vector<double>& point) {
     KDTree tree;
     double start = omp_get_wtime();
@@ -26,7 +25,7 @@ void test_build(const std::string& filename, const std::vector<double>& point) {
     std::shared_ptr<Node> nearest = tree.nearest(point);
     if (nearest != nullptr) {
         std::cout << "Nearest point found: ";
-        for (auto &coord : nearest->point) {
+        for (auto const &coord : nearest->point) {
             std::cout << coord << " ";
         }
         std::cout << std::endl;
@@ -37,19 +36,19 @@ void test_build(const std::string& filename, const std::vector<double>& point) {
 
 
 int main() {
-    omp_set_num_threads(12);
-    omp_set_nested(40);
+    omp_set_num_threads(40);
+    omp_set_nested(true);
 
-    int N = 10;
-    std::string filename = R"(C:\Users\c4s23\CLionProjects\KDTree\data\points.csv)";
+    const int N = 10;
+    const std::string filename = R"(/home/_sergei/ClionProject/KDTree/data/points.csv)";
     auto point = generate_point(N, 42);
     std::cout << "Point: ";
-    for (auto &coord : point) {
+    for (auto const &coord : point) {
         std::cout << coord << " ";
     }
     std::cout << std::endl;
 
-    for (int i = 0; i < 10; ++i, test_build(filename, point)) {}
+    for (int i = 0; i < 1; ++i, test_build(filename, point)) {}
 
     return 0;
 }
