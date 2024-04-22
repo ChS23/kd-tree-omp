@@ -1,10 +1,11 @@
 #include <vector>
+#include <memory>
 
 
 struct Node {
     std::vector<double> point;
-    Node* left;
-    Node* right;
+    std::shared_ptr<Node> left;
+    std::shared_ptr<Node> right;
 
     explicit Node(const std::vector<double>& pt) : point(pt), left(nullptr), right(nullptr) {}
 };

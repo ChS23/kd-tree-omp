@@ -23,7 +23,7 @@ void test_build(const std::string& filename, const std::vector<double>& point) {
     tree.load_from_csv(filename);
     std::cout << "Build time: " << omp_get_wtime() - start << std::endl;
 
-    Node* nearest = tree.nearest(point);
+    std::shared_ptr<Node> nearest = tree.nearest(point);
     if (nearest != nullptr) {
         std::cout << "Nearest point found: ";
         for (auto &coord : nearest->point) {
@@ -38,7 +38,7 @@ void test_build(const std::string& filename, const std::vector<double>& point) {
 
 int main() {
     omp_set_num_threads(12);
-//    omp_set_nested(40);
+    omp_set_nested(40);
 
     int N = 10;
     std::string filename = R"(C:\Users\c4s23\CLionProjects\KDTree\data\points.csv)";

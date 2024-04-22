@@ -16,17 +16,16 @@ public:
 
     void load_from_csv(const std::string &filename);
 
-    Node* nearest(const std::vector<double>& point);
+    std::shared_ptr<Node> nearest(const std::vector<double>& point);
 private:
-    Node* root;
+    std::shared_ptr<Node> root;
 
-    Node* insert(Node *root, const std::vector<double>& point, unsigned long long depth = 0.0);
+    using point_iterator = std::vector<std::vector<double>>::iterator;
 
-    Node* nearest(Node *root, const std::vector<double> &point, unsigned long long int depth, Node *best, double &best_dist);
+    std::shared_ptr<Node> insert(std::shared_ptr<Node> &node, point_iterator begin, point_iterator end, int depth);
 
-    Node *buildRecursive(const std::vector<std::vector<double>> &points, size_t depth);
+    std::shared_ptr<Node> nearest(std::shared_ptr<Node> root, const std::vector<double> &point, int depth, std::shared_ptr<Node> best, double &best_dist);
 
-    Node *buildSequential(const std::vector<std::vector<double>> &points, size_t depth);
 };
 
 #endif //KDTREE_KDTREE_H
