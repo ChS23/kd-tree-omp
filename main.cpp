@@ -36,8 +36,8 @@ void test_build(const std::string& filename, const std::vector<double>& point) {
 
 
 int main() {
-    omp_set_num_threads(40);
-    omp_set_nested(true);
+    omp_set_num_threads(8);
+    omp_set_nested(1);
 
     const int N = 10;
     const std::string filename = R"(/home/_sergei/ClionProject/KDTree/data/points.csv)";

@@ -38,8 +38,6 @@ void KDTree::build(const std::vector<std::vector<double>> &points) {
         nodes[i] = std::make_shared<Node>(points[i]);
     }
 
-    #pragma omp parallel
-    #pragma omp single
     root = balanced_insert(nodes.begin(), nodes.end(), 0);
 }
 
@@ -128,8 +126,6 @@ std::shared_ptr<Node> KDTree::balanced_insert(std::vector<std::shared_ptr<Node>>
         return nullptr;
     }
 
-    //std::cout << omp_get_thread_num() << std::endl;
-
     size_t length = std::distance(begin, end);
     size_t axis = depth % begin->get()->point.size();
 
@@ -143,15 +139,22 @@ std::shared_ptr<Node> KDTree::balanced_insert(std::vector<std::shared_ptr<Node>>
 
     std::shared_ptr<Node> node = *median;
 
-    if (depth < 7) {
-        #pragma omp task shared(node) firstprivate(begin, median, depth) default(none)
-        node->left = balanced_insert(begin, median, depth + 1);
-
-        #pragma omp task shared(node) firstprivate(median, end, depth) default(none)
-        node->right = balanced_insert(median + 1, end, depth + 1);
-
-        #pragma omp taskwait
-    } else {
+    if (depth < 7)
+    {
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                node->left = balanced_insert(begin, median, depth + 1);
+            }
+            #pragma omp section
+            {
+                node->right = balanced_insert(median + 1, end, depth + 1);
+            }
+        }
+    }
+    else
+    {
         node->left = balanced_insert(begin, median, depth + 1);
         node->right = balanced_insert(median + 1, end, depth + 1);
     }
